@@ -8,6 +8,11 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 public class Client {
+	String server;
+	int port;
+	
+	// Nickname. Can be changed.
+	String nick;
 	
 	/**
 	 * Print an error to stdout and exit.
@@ -37,10 +42,13 @@ public class Client {
                 System.out.println("echo: " + in.readLine());
             }
         } catch (UnknownHostException e) {
-        	exitWith("Don't know about host " + hostname, 1);
+        	exitWith("Can't find server at " + hostname, 1);
         } catch (IOException e) {
-        	exitWith("Couldn't get I/O for the connection to " + hostname, 1);
+        	exitWith("IOException at  " + hostname, 1);
 		}
+	}
+	
+	public void sendCommand(String[] command) {
 	}
 	
 	public static void main(String[] args) {

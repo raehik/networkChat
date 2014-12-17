@@ -6,9 +6,11 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 
 public class Server {
 	ServerSocket server;
+	List<Socket> clients;
 	
 	/**
 	 * Print an error to stdout and exit.
@@ -29,7 +31,7 @@ public class Server {
 		}
 	}
 	
-	public void echoListen(int port) {
+	public void boot(int port) {
         try (
         	ServerSocket server = new ServerSocket(port);
             Socket clientSocket = server.accept();    
@@ -52,6 +54,6 @@ public class Server {
 	
 	public static void main(String[] args) {
 		Server server = new Server();
-		server.echoListen(6789);
+		server.boot(6789);
 	}
 }
