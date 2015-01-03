@@ -8,8 +8,13 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 public class Client {
-	String server;
+	String hostname;
 	int port;
+	
+	Socket ssock;
+	
+	BufferedReader in;
+	PrintWriter out;
 	
 	// Nickname. Can be changed.
 	String nick;
@@ -26,33 +31,87 @@ public class Client {
 	}
 	
 	public void connectTo(String hostname, int port) {
-		try (
-		    Socket echoSocket = new Socket(hostname, port);
-		    PrintWriter out =
-		        new PrintWriter(echoSocket.getOutputStream(), true);
-		    BufferedReader in =
-		        new BufferedReader(
-		            new InputStreamReader(echoSocket.getInputStream()));
-		    BufferedReader stdIn =
-		        new BufferedReader(new InputStreamReader(System.in));
-		) {
-			String userInput;
-            while ((userInput = stdIn.readLine()) != null) {
-                out.println(userInput);
-                System.out.println("echo: " + in.readLine());
-            }
+		// connect to server socket
+		try {
+		    ssock = new Socket(hostname, port);
         } catch (UnknownHostException e) {
         	exitWith("Can't find server at " + hostname, 1);
         } catch (IOException e) {
-        	exitWith("IOException at  " + hostname, 1);
+        	exitWith("IOException at " + hostname + " - is there a server running on that port?", 2);
 		}
+		
+		// set up IO
+		try {
+			out = new PrintWriter(ssock.getOutputStream(), true);
+			in = new BufferedReader(new InputStreamReader(ssock.getInputStream()));
+		} catch (IOException e) {
+            exitWith("Exception caught when trying to set up IO with a client", 1);
+		}
+		
+		this.hostname = hostname;
+		this.port = port;
 	}
 	
-	public void sendCommand(String[] command) {
+	public String getInput() {
+		BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
+		String input = "";
+		
+		try {
+			input = stdin.readLine();
+		} catch (IOException e) {
+			exitWith("IOException at stdin", 3);
+		}
+		
+		return input;
+	}
+	
+	public String parseInput(String input) {
+		//String[] command = {"PRIVMSG", input};
+		//return command;
+		return "PRIVMSG " + input;
+	}
+
+	//public void sendMessage(String[] message) {
+	public void sendMessage(String message) {
+		out.println(message);
+	}
+	
+	public void sendInput() {
+		String input = getInput();
+		String message = parseInput(input);
+		sendMessage(message);
+	}
+	
+	public void listen() {
+		while (true) {
+			// read client messages
+			String input;
+			try {
+				while ((input = in.readLine()) != null) {
+					System.out.println("IN: " + input);
+				}
+			} catch (IOException e) {
+				exitWith("Exception caught when trying to read from client", 1);
+			}
+		}
 	}
 	
 	public static void main(String[] args) {
 		Client client = new Client();
 		client.connectTo("127.0.0.1", 6789);
+		
+		// listen for & print incoming messages
+		Runnable listener = new Runnable() {
+			public void run() {
+				client.listen();
+			}
+		};
+		Thread listenThread = new Thread(listener);
+		listenThread.start();
+		
+		// read stdin
+		while (true) {
+			client.sendInput();
+		}
 	}
 }
